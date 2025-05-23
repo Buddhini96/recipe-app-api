@@ -13,11 +13,17 @@ class Command(BaseCommand):
         """Entrypoint for command"""
         self.stdout.write('Waiting for database...')
         db_up = False
-        while not db_up:
+        MAX_RETRIES = 30
+        retries = 0
+        while db_up is False and retries < MAX_RETRIES:
             try:
                 self.check(databases=['default'])
                 db_up = True
             except (Psycopg2OpError, OperationalError):
                 self.stdout.write('Database unavailable, waiting 1 second...')
                 time.sleep(1)
-        self.stdout.write(self.style.SUCCESS('Database available!'))
+            retries += 1
+        if db_up:
+            self.stdout.write(self.style.SUCCESS('Database available!'))
+        else:
+            self.stdout.write(self.style.ERROR('Database not available after max retries.'))
