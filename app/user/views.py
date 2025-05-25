@@ -14,7 +14,7 @@ class CreateUserView(generics.CreateAPIView):
 class CreateAuthTokenView(ObtainAuthToken):
     """Create a new auth token for user."""
     serializer_class = AuthTokenSerializer
-    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES  #enables the browsable API in Django admin/dev.
 
 class ManageUserView(generics.RetrieveUpdateAPIView):
     """Manage the authenticated user."""
