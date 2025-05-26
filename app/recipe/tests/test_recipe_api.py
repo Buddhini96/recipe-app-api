@@ -375,12 +375,57 @@ class PrivateRecipeAPITests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(recipe.ingredients.count(), 0)
 
+    def test_filter_by_tags(self):
+        """Test filtering recipes by tags."""
+        tag1 = Tag.objects.create(user=self.user, name='Vegan')
+        tag2 = Tag.objects.create(user=self.user, name='Vegetarian')
+        recipe1 = create_recipe(user=self.user, title="pasta")
+        recipe2 = create_recipe(user=self.user, title="Macarroni")
+        recipe3 = create_recipe(user=self.user, title="Gnocchi")
+        recipe1.tags.add(tag1)
+        recipe2.tags.add(tag2)
+
+        params = {'tags': f'{tag1.id},{tag2.id}'}
+
+        res = self.client.get(RECIPE_URL, params)
+
+        s1 = RecipeSerializer(recipe1)
+        s2 = RecipeSerializer(recipe2)
+        s3 = RecipeSerializer(recipe3)
+
+        self.assertIn(s1.data, res.data)
+        self.assertIn(s2.data, res.data)
+        self.assertNotIn(s3.data, res.data)
+
+    def test_filter_by_ingredients(self):
+        """Test filtering recipes by ingredients."""
+        ingredient1 = Ingredient.objects.create(user=self.user, name='Onion')
+        ingredient2 = Ingredient.objects.create(user=self.user, name='Mushroom')
+        recipe1 = create_recipe(user=self.user, title="Pizza")
+        recipe2 = create_recipe(user=self.user, title="Burger")
+        recipe3 = create_recipe(user=self.user, title="Shawarma")
+        recipe1.ingredients.add(ingredient1)
+        recipe2.ingredients.add(ingredient2)
+
+        params = {'ingredients': f'{ingredient1.id},{ingredient2.id}'}
+
+        res = self.client.get(RECIPE_URL, params)
+
+        s1 = RecipeSerializer(recipe1)
+        s2 = RecipeSerializer(recipe2)
+        s3 = RecipeSerializer(recipe3)
+
+        self.assertIn(s1.data, res.data)
+        self.assertIn(s2.data, res.data)
+        self.assertNotIn(s3.data, res.data)
+
+
 class ImageUploadTests(TestCase):
     """Tests for the image upload url"""
 
     def setUp(self):
         self.client = APIClient()
-        self.user = create_user({'email':"test@example.com", 'password':"testpass123"})
+        self.user = get_user_model().objects.create_user("test@example.com", "testpass123")
         self.client.force_authenticate(self.user)
         self.recipe = create_recipe(user=self.user)
 
@@ -399,10 +444,10 @@ class ImageUploadTests(TestCase):
 
             res = self.client.post(url, payload, format='multipart')
 
-            self.recipe.refresh_from_db()
-            self.assertEqual(res.status_code, status.HTTP_200_OK)
-            self.assertIn('image', res.data)
-            self.assertTrue(os.path.exists(self.recipe.image.path))
+        self.recipe.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('image', res.data)
+        self.assertTrue(os.path.exists(self.recipe.image.path))
 
     def test_upload_image_bad_request(self):
         """Test uploading invalid  image to a recipe"""
